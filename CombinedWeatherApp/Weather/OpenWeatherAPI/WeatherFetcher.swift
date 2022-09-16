@@ -39,11 +39,12 @@ class WeatherFetcher {
 
 // MARK: - OpenWeatherMap API
 private extension WeatherFetcher {
+  
   struct OpenWeatherAPI {
     static let scheme = "https"
     static let host = "api.openweathermap.org"
     static let path = "/data/2.5"
-    static let key = "<your key>"
+    static let key = "f2648dfc00be18d17e2feade749bfd6b"
   }
   
   func makeWeeklyForecastComponents(
