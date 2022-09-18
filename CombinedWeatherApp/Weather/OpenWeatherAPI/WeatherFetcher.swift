@@ -37,6 +37,37 @@ class WeatherFetcher {
   }
 }
 
+//MARK: - WeatherFetchable
+extension WeatherFetcher: WeatherFetchable {
+  func weeklyWeatherForecast(forCity city: String) -> AnyPublisher<WeeklyForecastResponse, WeatherError> {
+    return forecast(with: makeWeeklyForecastComponents(withCity: city))
+  }
+
+  func currentWeatherForecast(forCity city: String) -> AnyPublisher<CurrentWeatherForecastResponse, WeatherError> {
+    return forecast(with: makeCurrentDayForecastComponents(withCity: city))
+  }
+  
+  private func forecast<T>(with components: URLComponents) -> AnyPublisher<T, WeatherError> where T: Decodable {
+    // 1.
+    guard let url = components.url else {
+      let error = WeatherError.network(description: "Couldn't create URL")
+      return Fail(error: error).eraseToAnyPublisher()
+    }
+    // 2.
+    return session.dataTaskPublisher(for: URLRequest(url: url))
+      // 3.
+      .mapError { error in
+          .network(description: error.localizedDescription)
+      }
+    // 4.
+      .flatMap(maxPublishers: .max(1)) { pair in
+        decode(pair.data)
+      }
+      // 5.
+      .eraseToAnyPublisher()
+  }
+}
+
 // MARK: - OpenWeatherMap API
 private extension WeatherFetcher {
   
@@ -47,9 +78,7 @@ private extension WeatherFetcher {
     static let key = "f2648dfc00be18d17e2feade749bfd6b"
   }
   
-  func makeWeeklyForecastComponents(
-    withCity city: String
-  ) -> URLComponents {
+  func makeWeeklyForecastComponents(withCity city: String) -> URLComponents {
     var components = URLComponents()
     components.scheme = OpenWeatherAPI.scheme
     components.host = OpenWeatherAPI.host
@@ -65,9 +94,7 @@ private extension WeatherFetcher {
     return components
   }
   
-  func makeCurrentDayForecastComponents(
-    withCity city: String
-  ) -> URLComponents {
+  func makeCurrentDayForecastComponents(withCity city: String) -> URLComponents {
     var components = URLComponents()
     components.scheme = OpenWeatherAPI.scheme
     components.host = OpenWeatherAPI.host
@@ -82,4 +109,10 @@ private extension WeatherFetcher {
     
     return components
   }
+}
+
+protocol WeatherFetchable {
+  func weeklyWeatherForecast(forCity city: String) -> AnyPublisher<WeeklyForecastResponse, WeatherError>
+  
+  func currentWeatherForecast(forCity city: String) -> AnyPublisher<CurrentWeatherForecastResponse, WeatherError>
 }
