@@ -59,7 +59,7 @@ extension WeatherFetcher: WeatherFetchable {
       .mapError { error in
           .network(description: error.localizedDescription)
       }
-    // 4.
+      // 4.
       .flatMap(maxPublishers: .max(1)) { pair in
         decode(pair.data)
       }
