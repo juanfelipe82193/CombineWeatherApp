@@ -40,8 +40,14 @@ class WeeklyWeatherViewModel: ObservableObject, Identifiable {
   private var disposables = Set<AnyCancellable>()
   
   
-  init(weatherFetcher: WeatherFetchable) {
+  init(weatherFetcher: WeatherFetchable, scheduler: DispatchQueue = DispatchQueue(label: "WeatherViewModel")) {
     self.weatherFetcher = weatherFetcher
+    
+    $city
+      .dropFirst(1)
+      .debounce(for: .seconds(0.5), scheduler: scheduler)
+      .sink(receiveValue: fetchWeather(forCity:))
+      .store(in: &disposables)
   }
   
   func fetchWeather(forCity city: String) {
@@ -60,9 +66,10 @@ class WeeklyWeatherViewModel: ObservableObject, Identifiable {
       .sink { [weak self] value in
         guard let self = self else { return }
         switch value {
-        case .failure:
           
+        case .failure:
           self.dataSource = []
+          
         case .finished:
           break
           
